@@ -1,23 +1,75 @@
-# Lets-Travel
-Local guide sharing platform demo built with Vue 3 + Element Plus.
+# Let's Travel - Peer-to-Peer Travel Platform
+
+A sharing economy platform that connects tourists with local tour guides, similar to Agoda, Uber, and KLOOK.
 
 ## Features
-- Manage different types of users, profiles, reviews, and ratings.
-- Manage tours: create/edit, adjust prices, and review ratings.
-- Enable tourists to find tours, book, and negotiate requirements.
-- Track transactions and payouts.
-- Support dispute resolution workflows.
-- Generate operational reports.
 
-## Tech Stack
-- Vue 3 + Vite
-- Element Plus (el-library)
-- Vue Router
+### 1. User Management Module
+- **Three User Types**: Tourists, Tour Guides, and Administrators
+- **Registration & Login**: Different registration flows for each user type
+- **Personal Profiles**: Customizable profiles with language abilities and preferences
+- **Access Control**: Role-based permissions and capabilities
+
+### 2. Itinerary Management Module (Tour Guide)
+- Create and publish tour itineraries
+- Edit prices, availability, and details
+- Admin approval workflow (Draft → Under Review → Online → Offline)
+- Photo uploads and service descriptions
+
+### 3. Search & Booking Module (Tourist)
+- Advanced filtering (destination, type, price, duration, language, rating)
+- Booking process with date/guest selection
+- Built-in chat system with privacy protection
+- Multi-currency support with real-time conversion
+
+### 4. Payment & Transaction Module
+- Simulated payment integration
+- Transaction history and order details
+- Refund policies (80% within 48hrs, 50% within 24hrs)
+
+### 5. Evaluation & Credit Module
+- Tourist ratings for tour guides
+- Credit score calculation based on performance
+- Public visibility of ratings and reviews
+
+### 6. Order & Itinerary Management
+- Order tracking for all user types
+- Calendar view for tour guides
+- Push notifications for reminders
+
+### 7. Dispute Resolution Module
+- Complaint submission with evidence
+- Admin review and intervention
+- Resolution tracking
+
+### 8. Data Statistics & Reporting
+- Tour guide revenue reports and analytics
+- Administrator platform-wide statistics
+- Review and dispute management
+
+## Test Data
+- 120+ Users (Tourists, Tour Guides, Administrators)
+- 120+ Tours
+- 1,200+ Transactions and Ratings
 
 ## Getting Started
-1. Install dependencies:
-	- `npm install`
-2. Start the dev server:
-	- `npm run dev`
 
-The app will be available on `http://localhost:5173`.
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Generate test data
+npm run generate-data
+
+# Build for production
+npm run build
+```
+
+## Technology Stack
+- Vue 3 with Composition API
+- Vue Router for navigation
+- Pinia for state management
+- Vite for build tooling
