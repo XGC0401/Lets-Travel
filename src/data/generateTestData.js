@@ -81,7 +81,7 @@ function generateUsers(count) {
       city: city,
       languages: langs,
       specialties: [randomElement(tourTypes), randomElement(tourTypes)].filter((v, i, a) => a.indexOf(v) === i),
-      rating: (3.5 + Math.random() * 1.5).toFixed(1),
+      rating: (7 + Math.random() * 3).toFixed(1),
       totalTours: randomInt(5, 50),
       completedBookings: randomInt(10, 200),
       responseTime: randomInt(1, 24),
@@ -114,7 +114,8 @@ function generateUsers(count) {
       createdAt: randomDate(new Date('2024-06-01'), new Date('2026-01-01')).toISOString(),
       totalBookings: randomInt(0, 15),
       phoneVerified: Math.random() > 0.1,
-      emailVerified: Math.random() > 0.05
+      emailVerified: Math.random() > 0.05,
+      status: Math.random() > 0.05 ? 'active' : 'suspended'
     })
   }
   
@@ -155,7 +156,7 @@ function generateTours(guides, count) {
       ],
       availability: generateAvailability(),
       status: randomElement(statuses),
-      rating: (3.5 + Math.random() * 1.5).toFixed(1),
+      rating: (7 + Math.random() * 3).toFixed(1),
       reviewCount: randomInt(0, 100),
       createdAt: randomDate(new Date('2025-01-01'), new Date('2026-01-01')).toISOString(),
       updatedAt: randomDate(new Date('2025-06-01'), new Date('2026-02-01')).toISOString()
@@ -220,7 +221,7 @@ function generateReviews(bookings, users) {
   for (let i = 0; i < reviewCount; i++) {
     const booking = completedBookings[i]
     const tourist = users.find(u => u.id === booking.touristId)
-    const rating = randomInt(3, 5)
+    const rating = randomInt(6, 10)
     
     const comments = [
       'Amazing experience! Highly recommend.',
@@ -243,8 +244,8 @@ function generateReviews(bookings, users) {
       touristId: booking.touristId,
       rating: rating,
       comment: randomElement(comments),
-      serviceRating: randomInt(rating - 1, 5),
-      professionalismRating: randomInt(rating - 1, 5),
+      serviceRating: randomInt(Math.max(1, rating - 2), 10),
+      professionalismRating: randomInt(Math.max(1, rating - 2), 10),
       satisfactionRating: rating,
       createdAt: new Date(new Date(booking.completedAt).getTime() + randomInt(86400000, 604800000)).toISOString()
     })

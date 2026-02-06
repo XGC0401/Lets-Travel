@@ -23,7 +23,7 @@
         </div>
         
         <div class="form-group">
-          <label>Price Range (USD)</label>
+          <label>Price Range</label>
           <div class="price-inputs">
             <input type="number" v-model.number="filters.minPrice" placeholder="Min" min="0">
             <span>-</span>
@@ -54,9 +54,10 @@
           <label>Minimum Rating</label>
           <select v-model.number="filters.minRating">
             <option :value="0">Any</option>
-            <option :value="3">3+ ⭐</option>
-            <option :value="4">4+ ⭐</option>
-            <option :value="4.5">4.5+ ⭐</option>
+            <option :value="6">6+ ⭐</option>
+            <option :value="7">7+ ⭐</option>
+            <option :value="8">8+ ⭐</option>
+            <option :value="9">9+ ⭐</option>
           </select>
         </div>
       </div>
@@ -121,9 +122,12 @@
       </div>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useDataStore } from '../../stores/data'
 import { useSettingsStore } from '../../stores/settings'

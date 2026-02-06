@@ -24,10 +24,12 @@ import AdminTours from '../views/admin/AdminTours.vue'
 import AdminReviews from '../views/admin/AdminReviews.vue'
 import AdminDisputes from '../views/admin/AdminDisputes.vue'
 import AdminReports from '../views/admin/AdminReports.vue'
+import AdminEmergency from '../views/admin/AdminEmergency.vue'
 
 // Shared Views
 import Profile from '../views/shared/Profile.vue'
 import DataGenerator from '../views/shared/DataGenerator.vue'
+import Emergency from '../views/shared/Emergency.vue'
 
 const routes = [
   {
@@ -87,6 +89,12 @@ const routes = [
     component: Messages,
     meta: { requiresAuth: true }
   },
+  {
+    path: '/emergency',
+    name: 'TouristEmergency',
+    component: Emergency,
+    meta: { requiresAuth: true, role: 'tourist' }
+  },
   
   // Guide Routes
   {
@@ -119,6 +127,18 @@ const routes = [
     component: GuideReports,
     meta: { requiresAuth: true, role: 'guide' }
   },
+  {
+    path: '/guide-emergency',
+    name: 'GuideEmergency',
+    component: Emergency,
+    meta: { requiresAuth: true, role: 'guide' }
+  },
+  {
+    path: '/guide-emergency',
+    name: 'GuideEmergency',
+    component: Emergency,
+    meta: { requiresAuth: true, role: 'guide' }
+  },
   
   // Admin Routes
   {
@@ -149,6 +169,12 @@ const routes = [
     path: '/admin/reports',
     name: 'AdminReports',
     component: AdminReports,
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/emergency',
+    name: 'AdminEmergency',
+    component: AdminEmergency,
     meta: { requiresAuth: true, role: 'admin' }
   },
   

@@ -45,14 +45,39 @@
               :key="message.id"
               :class="['message-bubble', { 'my-message': message.senderId === authStore.user.id }]"
             >
-              <div class="message-content">
+              <div v-if="message.message" class="message-content">
                 {{ message.message }}
               </div>
+              
+              <!-- Attachment display -->
+              <div v-if="message.attachment" class="message-attachment">
+                <div v-if="message.attachmentType === 'image'" class="attachment-image">
+                  <img :src="message.attachment" @click="openAttachment(message.attachment)" alt="Image" />
+                </div>
+                <div v-else class="attachment-file">
+                  <span class="file-icon">{{ getFileIcon(message.attachmentType) }}</span>
+                  <span class="file-name">{{ message.attachmentName }}</span>
+                  <button @click="downloadAttachment(message.attachment, message.attachmentName)" class="btn-small btn-secondary">
+                    Download
+                  </button>
+                </div>
+              </div>
+              
               <small class="message-time">{{ formatTime(message.timestamp) }}</small>
             </div>
           </div>
           
           <form @submit.prevent="sendMessage" class="message-input-form">
+            <label for="file-upload" class="file-upload-btn">
+              <input 
+                type="file" 
+                id="file-upload" 
+                @change="handleFileUpload" 
+                accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx"
+                hidden
+              >
+              <span>+</span>
+            </label>
             <input 
               type="text" 
               v-model="newMessage" 
@@ -65,9 +90,12 @@
       </div>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDataStore } from '../../stores/data'
@@ -81,6 +109,7 @@ const authStore = useAuthStore()
 const selectedUserId = ref(null)
 const newMessage = ref('')
 const messagesContainer = ref(null)
+const pendingAttachment = ref(null)
 
 onMounted(() => {
   // Check if there's a userId in query params
@@ -145,7 +174,7 @@ function selectConversation(userId) {
 }
 
 function sendMessage() {
-  if (!newMessage.value.trim()) return
+  if (!newMessage.value.trim() && !pendingAttachment.value) return
   
   const message = {
     id: generateId('message'),
@@ -157,12 +186,74 @@ function sendMessage() {
     read: false
   }
   
+  // Add attachment if present
+  if (pendingAttachment.value) {
+    message.attachment = pendingAttachment.value.data
+    message.attachmentType = pendingAttachment.value.type
+    message.attachmentName = pendingAttachment.value.name
+  }
+  
   dataStore.addMessage(message)
   newMessage.value = ''
+  pendingAttachment.value = null
   
   nextTick(() => {
     scrollToBottom()
   })
+}
+
+function handleFileUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const fileType = getFileType(file.type, file.name)
+    pendingAttachment.value = {
+      data: e.target.result,
+      type: fileType,
+      name: file.name
+    }
+    
+    // Auto-send if it's a file upload
+    sendMessage()
+  }
+  reader.readAsDataURL(file)
+  
+  // Reset file input
+  event.target.value = ''
+}
+
+function getFileType(mimeType, fileName) {
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  if (fileName.endsWith('.pdf')) return 'pdf'
+  if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) return 'document'
+  if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) return 'presentation'
+  return 'file'
+}
+
+function getFileIcon(fileType) {
+  const icons = {
+    image: '🖼️',
+    video: '🎥',
+    pdf: '📄',
+    document: '📝',
+    presentation: '📊',
+    file: '📎'
+  }
+  return icons[fileType] || '📎'
+}
+
+function openAttachment(dataUrl) {
+  window.open(dataUrl, '_blank')
+}
+
+function downloadAttachment(dataUrl, fileName) {
+  const link = document.createElement('a')
+  link.href = dataUrl
+  link.download = fileName
+  link.click()
 }
 
 function scrollToBottom() {
@@ -292,6 +383,8 @@ function formatTime(timestamp) {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  max-height: 600px;
+  min-height: 500px;
 }
 
 .message-bubble {
@@ -309,6 +402,49 @@ function formatTime(timestamp) {
 
 .message-content {
   margin-bottom: 0.25rem;
+  word-wrap: break-word;
+}
+
+.message-attachment {
+  margin: 0.5rem 0;
+}
+
+.attachment-image img {
+  max-width: 300px;
+  max-height: 300px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.attachment-image img:hover {
+  transform: scale(1.02);
+}
+
+.attachment-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-small {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
 }
 
 .message-time {
@@ -318,17 +454,40 @@ function formatTime(timestamp) {
 
 .message-input-form {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   padding-top: 1rem;
   border-top: 2px solid #e2e8f0;
+  align-items: center;
+}
+
+.file-upload-btn {
+  width: 40px;
+  height: 40px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: bold;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.file-upload-btn:hover {
+  background: #764ba2;
+  transform: scale(1.1);
 }
 
 .message-input {
   flex: 1;
-  padding: 0.75rem;
+  padding: 1rem 1.5rem;
   border: 2px solid #e2e8f0;
   border-radius: 25px;
   outline: none;
+  font-size: 1.25rem;
 }
 
 .message-input:focus {

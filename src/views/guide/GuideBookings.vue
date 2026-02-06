@@ -32,8 +32,23 @@
         <div class="booking-info-grid">
           <div><strong>📅 Date:</strong> {{ formatDate(booking.date) }}</div>
           <div><strong>👥 People:</strong> {{ booking.people }}</div>
-          <div><strong>💰 Total:</strong> ${{ booking.totalPrice }}</div>
+          <div><strong>💰 Total:</strong> {{ settingsStore.formatPrice(booking.totalPrice) }}</div>
           <div><strong>📞 Contact:</strong> {{ getTourist(booking.touristId)?.phone || 'N/A' }}</div>
+        </div>
+        
+        <div v-if="booking.confirmedAt" class="timestamp-info">
+          <strong>✓ Confirmed time:</strong> {{ formatDateTime(booking.confirmedAt) }}
+        </div>
+        
+        <div v-if="booking.completedAt" class="timestamp-info">
+          <strong>✓ Completed time:</strong> {{ formatDateTime(booking.completedAt) }}
+        </div>
+        
+        <div v-if="booking.status === 'cancelled' && booking.declinedAt" class="timestamp-info decline-info">
+          <strong>✗ Decline time:</strong> {{ formatDateTime(booking.declinedAt) }}
+          <div v-if="booking.declineReason" class="decline-reason">
+            <strong>Reason:</strong> {{ booking.declineReason }}
+          </div>
         </div>
         
         <div v-if="booking.specialRequests" class="special-requests">
@@ -50,7 +65,7 @@
           </button>
           <button 
             v-if="booking.status === 'pending'"
-            @click="declineBooking(booking)"
+            @click="showDeclineModal(booking)"
             class="btn btn-danger"
           >
             Decline
@@ -62,6 +77,13 @@
           >
             Mark Complete
           </button>
+          <button 
+            v-if="booking.status === 'confirmed'"
+            @click="refundBooking(booking)"
+            class="btn btn-warning"
+          >
+            Refund
+          </button>
           <router-link 
             :to="`/messages?userId=${booking.touristId}`" 
             class="btn btn-secondary"
@@ -71,24 +93,53 @@
         </div>
       </div>
     </div>
+    
+    <!-- Decline Modal -->
+    <div v-if="declineModal" class="modal-overlay" @click="closeDeclineModal">
+      <div class="modal-content card" @click.stop>
+        <h2>Decline Booking</h2>
+        <p>Please provide a reason for declining this booking. This message will be sent to all participants.</p>
+        
+        <div class="form-group">
+          <label>Reason for Declining</label>
+          <textarea v-model="declineReason" rows="4" placeholder="e.g., I am seriously ill and cannot attend" required></textarea>
+        </div>
+        
+        <div class="modal-actions">
+          <button @click="confirmDecline" class="btn btn-danger">Decline & Refund</button>
+          <button @click="closeDeclineModal" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/data'
 import { useAuthStore } from '../../stores/auth'
+import { useSettingsStore } from '../../stores/settings'
+import { generateId } from '../../data/dataService'
 
 const dataStore = useDataStore()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 const currentStatus = ref('all')
 const statuses = [
   { label: 'All', value: 'all' },
   { label: 'Pending', value: 'pending' },
   { label: 'Confirmed', value: 'confirmed' },
-  { label: 'Completed', value: 'completed' }
+  { label: 'Completed', value: 'completed' },
+  { label: 'Declined', value: 'cancelled' }
 ]
+
+const declineModal = ref(false)
+const declineReason = ref('')
+const bookingToDecline = ref(null)
 
 const myBookings = computed(() => {
   return dataStore.getBookingsByGuide(authStore.user.id).sort((a, b) => 
@@ -132,12 +183,111 @@ function formatDate(dateStr) {
   })
 }
 
+function formatDateTime(dateStr) {
+  return new Date(dateStr).toLocaleString('en-US', { 
+    year: 'numeric', 
+    month: 'numeric', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 function confirmBooking(booking) {
   dataStore.updateBooking(booking.id, { 
     status: 'confirmed',
     confirmedAt: new Date().toISOString(),
     paymentStatus: 'paid'
   })
+}
+
+function showDeclineModal(booking) {
+  bookingToDecline.value = booking
+  declineReason.value = ''
+  declineModal.value = true
+}
+
+function closeDeclineModal() {
+  declineModal.value = false
+  bookingToDecline.value = null
+  declineReason.value = ''
+}
+
+function confirmDecline() {
+  if (!declineReason.value.trim()) {
+    alert('Please provide a reason for declining.')
+    return
+  }
+  
+  const booking = bookingToDecline.value
+  
+  // Update booking status
+  dataStore.updateBooking(booking.id, { 
+    status: 'cancelled',
+    declinedAt: new Date().toISOString(),
+    declineReason: declineReason.value,
+    paymentStatus: 'refunded'
+  })
+  
+  // Create refund transaction
+  const transaction = {
+    id: generateId('transaction'),
+    bookingId: booking.id,
+    touristId: booking.touristId,
+    guideId: authStore.user.id,
+    amount: booking.totalPrice,
+    type: 'refund',
+    status: 'completed',
+    createdAt: new Date().toISOString(),
+    completedAt: new Date().toISOString()
+  }
+  
+  dataStore.addTransaction(transaction)
+  
+  // Send message to tourist
+  const message = {
+    id: generateId('message'),
+    bookingId: booking.id,
+    senderId: authStore.user.id,
+    receiverId: booking.touristId,
+    message: `Your booking for "${getTour(booking.tourId)?.title}" has been declined. Reason: ${declineReason.value}. A full refund of $${booking.totalPrice} has been processed.`,
+    timestamp: new Date().toISOString(),
+    read: false
+  }
+  
+  dataStore.addMessage(message)
+  
+  alert('Booking declined and refund processed. Message sent to tourist.')
+  closeDeclineModal()
+}
+
+function refundBooking(booking) {
+  if (confirm(`Issue a full refund of $${booking.totalPrice} for this booking?`)) {
+    // Update booking status
+    dataStore.updateBooking(booking.id, { 
+      status: 'cancelled',
+      declinedAt: new Date().toISOString(),
+      declineReason: 'Refunded by guide',
+      paymentStatus: 'refunded'
+    })
+    
+    // Create refund transaction
+    const transaction = {
+      id: generateId('transaction'),
+      bookingId: booking.id,
+      touristId: booking.touristId,
+      guideId: authStore.user.id,
+      amount: booking.totalPrice,
+      type: 'refund',
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      completedAt: new Date().toISOString()
+    }
+    
+    dataStore.addTransaction(transaction)
+    
+    alert('Refund processed successfully.')
+  }
 }
 
 function declineBooking(booking) {
@@ -226,5 +376,51 @@ function completeBooking(booking) {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+.timestamp-info {
+  padding: 0.75rem;
+  background: #f0fff4;
+  border-radius: 5px;
+  margin-bottom: 0.5rem;
+  color: #22543d;
+}
+
+.timestamp-info.decline-info {
+  background: #fff5f5;
+  color: #742a2a;
+}
+
+.decline-reason {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 </style>

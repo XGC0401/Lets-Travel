@@ -66,9 +66,12 @@
       </div>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/data'
 import { useAuthStore } from '../../stores/auth'

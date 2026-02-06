@@ -72,9 +72,12 @@
       </form>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '../../stores/data'

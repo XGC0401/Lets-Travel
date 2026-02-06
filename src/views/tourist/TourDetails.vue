@@ -27,7 +27,7 @@
           </div>
           
           <div class="tour-rating">
-            ⭐ {{ tour.rating }} / 5.0 ({{ tour.reviewCount }} reviews)
+            ⭐ {{ tour.rating }} / 10.0 ({{ tour.reviewCount }} reviews)
           </div>
           
           <div class="tour-quick-info">
@@ -75,11 +75,22 @@
           <!-- Reviews -->
           <div class="reviews-section">
             <h3>Reviews ({{ reviews.length }})</h3>
+            
+            <!-- User's own review highlighted -->
+            <div v-if="userReview" class="review-item my-review">
+              <div class="review-header">
+                <strong>{{ getUserName(userReview.touristId) }} (You)</strong>
+                <span class="review-rating">⭐ {{ userReview.rating }}/10</span>
+              </div>
+              <p>{{ userReview.comment }}</p>
+              <small class="review-date">{{ formatDate(userReview.createdAt) }}</small>
+            </div>
+            
             <div v-if="reviews.length === 0" class="loading">No reviews yet</div>
-            <div v-for="review in reviews.slice(0, 5)" :key="review.id" class="review-item">
+            <div v-for="review in otherReviews.slice(0, 5)" :key="review.id" class="review-item">
               <div class="review-header">
                 <strong>{{ getUserName(review.touristId) }}</strong>
-                <span class="review-rating">⭐ {{ review.rating }}/5</span>
+                <span class="review-rating">⭐ {{ review.rating }}/10</span>
               </div>
               <p>{{ review.comment }}</p>
               <small class="review-date">{{ formatDate(review.createdAt) }}</small>
@@ -153,9 +164,12 @@
   </div>
   
   <div v-else class="loading">Loading tour details...</div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDataStore } from '../../stores/data'
@@ -183,6 +197,14 @@ const bookingForm = ref({
 
 const totalPrice = computed(() => {
   return tour.value ? tour.value.price * bookingForm.value.people : 0
+})
+
+const userReview = computed(() => {
+  return reviews.value.find(r => r.touristId === authStore.user.id)
+})
+
+const otherReviews = computed(() => {
+  return reviews.value.filter(r => r.touristId !== authStore.user.id)
 })
 
 onMounted(() => {
@@ -384,6 +406,12 @@ function formatDate(dateStr) {
   background: #f7fafc;
   border-radius: 5px;
   margin-bottom: 1rem;
+}
+
+.review-item.my-review {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border: 2px solid #667eea;
+  font-weight: 500;
 }
 
 .review-header {

@@ -42,12 +42,27 @@ export const useSettingsStore = defineStore('settings', () => {
     return `${symbol}${converted}`
   }
 
+  function formatLargePrice(priceUSD, toCurrency = currency.value) {
+    const rate = exchangeRates.value[toCurrency] || 1
+    const converted = priceUSD * rate
+    const symbol = currencySymbols[toCurrency] || '$'
+    
+    if (converted >= 1000000) {
+      return `${symbol}${(converted / 1000000).toFixed(2)}M`
+    } else if (converted >= 1000) {
+      return `${symbol}${(converted / 1000).toFixed(2)}K`
+    } else {
+      return `${symbol}${converted.toFixed(2)}`
+    }
+  }
+
   return {
     currency,
     exchangeRates,
     currencySymbols,
     updateCurrency,
     convertPrice,
-    formatPrice
+    formatPrice,
+    formatLargePrice
   }
 })

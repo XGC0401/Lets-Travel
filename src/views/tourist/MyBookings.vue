@@ -84,6 +84,68 @@
           >
             Leave Review
           </button>
+          
+          <button 
+            v-if="booking.status === 'completed' && hasReview(booking.id)"
+            @click="editReviewModal(booking)"
+            class="btn btn-primary"
+          >
+            Edit Review
+          </button>
+          
+          <button 
+            v-if="booking.status === 'completed' || booking.status === 'cancelled'"
+            @click="openDisputeModal(booking)"
+            class="btn btn-danger"
+          >
+            Report Dispute
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Dispute Modal -->
+    <div v-if="showDisputeModal" class="modal-overlay" @click="showDisputeModal = false">
+      <div class="modal-content card" @click.stop>
+        <h2>Report Dispute</h2>
+        
+        <div class="form-group">
+          <label>Reason</label>
+          <select v-model="disputeForm.reason">
+            <option value="">Select a reason</option>
+            <option value="Guide No-Show">Guide No-Show</option>
+            <option value="Tour Cancellation">Tour Cancellation</option>
+            <option value="Poor Service">Poor Service</option>
+            <option value="Safety Concerns">Safety Concerns</option>
+            <option value="Refund Issue">Refund Issue</option>
+            <option value="Misleading Information">Misleading Information</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Description</label>
+          <textarea 
+            v-model="disputeForm.description" 
+            placeholder="Please describe the issue in detail..."
+            rows="5"
+          ></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label>Evidence (Optional)</label>
+          <input 
+            type="file" 
+            @change="handleDisputeEvidence"
+            accept="image/*,.pdf"
+            multiple
+          >
+          <small>You can upload images or PDF files as evidence</small>
+        </div>
+        
+        <div class="modal-actions">
+          <button @click="showDisputeModal = false" class="btn btn-secondary">Cancel</button>
+          <button @click="submitDispute" class="btn btn-danger" :disabled="!disputeForm.reason || !disputeForm.description">Submit Dispute</button>
         </div>
       </div>
     </div>
@@ -91,7 +153,7 @@
     <!-- Review Modal -->
     <div v-if="reviewModal" class="modal-overlay" @click="closeReviewModal">
       <div class="modal-content card" @click.stop>
-        <h2>Leave a Review</h2>
+        <h2>{{ editingReview ? 'Edit Review' : 'Leave a Review' }}</h2>
         
         <div class="form-group">
           <label>Rating</label>
@@ -124,15 +186,19 @@
         </div>
         
         <div class="modal-actions">
-          <button @click="submitReview" class="btn btn-primary">Submit Review</button>
+          <button @click="submitReview" class="btn btn-primary">{{ editingReview ? 'Update Review' : 'Submit Review' }}</button>
+          <button v-if="editingReview" @click="deleteReview" class="btn btn-danger">Delete Review</button>
           <button @click="closeReviewModal" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/data'
 import { useAuthStore } from '../../stores/auth'
@@ -146,6 +212,14 @@ const settingsStore = useSettingsStore()
 const currentStatus = ref('all')
 const reviewModal = ref(false)
 const currentBooking = ref(null)
+const editingReview = ref(null)
+const showDisputeModal = ref(false)
+const currentDisputeBooking = ref(null)
+const disputeForm = ref({
+  reason: '',
+  description: '',
+  evidence: []
+})
 
 const statuses = [
   { label: 'All', value: 'all' },
@@ -156,9 +230,9 @@ const statuses = [
 ]
 
 const reviewForm = ref({
-  rating: 5,
-  serviceRating: 5,
-  professionalismRating: 5,
+  rating: 10,
+  serviceRating: 10,
+  professionalismRating: 10,
   comment: ''
 })
 
@@ -206,6 +280,47 @@ function formatDate(dateStr) {
   })
 }
 
+function openDisputeModal(booking) {
+  currentDisputeBooking.value = booking
+  disputeForm.value = {
+    reason: '',
+    description: '',
+    evidence: []
+  }
+  showDisputeModal.value = true
+}
+
+function handleDisputeEvidence(event) {
+  const files = Array.from(event.target.files)
+  files.forEach(file => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      disputeForm.value.evidence.push(e.target.result)
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function submitDispute() {
+  if (!currentDisputeBooking.value) return
+  
+  const dispute = {
+    id: generateId(),
+    complainantId: authStore.user.id,
+    respondentId: currentDisputeBooking.value.guideId,
+    tourId: currentDisputeBooking.value.tourId,
+    bookingId: currentDisputeBooking.value.id,
+    reason: disputeForm.value.reason,
+    description: disputeForm.value.description,
+    evidence: disputeForm.value.evidence,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  }
+  
+  dataStore.addDispute(dispute)
+  showDisputeModal.value = false
+  alert('Dispute reported successfully. An administrator will review your case.')
+}
 function canCancel(booking) {
   const bookingDate = new Date(booking.date)
   const now = new Date()
@@ -253,14 +368,35 @@ function hasReview(bookingId) {
   return dataStore.reviews.some(r => r.bookingId === bookingId)
 }
 
+function getReview(bookingId) {
+  return dataStore.reviews.find(r => r.bookingId === bookingId)
+}
+
 function showReviewModal(booking) {
   currentBooking.value = booking
+  editingReview.value = null
+  reviewModal.value = true
+}
+
+function editReviewModal(booking) {
+  currentBooking.value = booking
+  const existingReview = getReview(booking.id)
+  if (existingReview) {
+    editingReview.value = existingReview
+    reviewForm.value = {
+      rating: existingReview.rating,
+      serviceRating: existingReview.serviceRating,
+      professionalismRating: existingReview.professionalismRating,
+      comment: existingReview.comment
+    }
+  }
   reviewModal.value = true
 }
 
 function closeReviewModal() {
   reviewModal.value = false
   currentBooking.value = null
+  editingReview.value = null
   reviewForm.value = {
     rating: 5,
     serviceRating: 5,
@@ -270,23 +406,96 @@ function closeReviewModal() {
 }
 
 function submitReview() {
-  const review = {
-    id: generateId('review'),
-    bookingId: currentBooking.value.id,
-    tourId: currentBooking.value.tourId,
-    guideId: currentBooking.value.guideId,
-    touristId: authStore.user.id,
-    rating: reviewForm.value.rating,
-    serviceRating: reviewForm.value.serviceRating,
-    professionalismRating: reviewForm.value.professionalismRating,
-    satisfactionRating: reviewForm.value.rating,
-    comment: reviewForm.value.comment,
-    createdAt: new Date().toISOString()
+  if (editingReview.value) {
+    // Update existing review
+    const reviewIndex = dataStore.reviews.findIndex(r => r.id === editingReview.value.id)
+    if (reviewIndex !== -1) {
+      dataStore.reviews[reviewIndex] = {
+        ...dataStore.reviews[reviewIndex],
+        rating: reviewForm.value.rating,
+        serviceRating: reviewForm.value.serviceRating,
+        professionalismRating: reviewForm.value.professionalismRating,
+        comment: reviewForm.value.comment,
+        updatedAt: new Date().toISOString()
+      }
+      
+      // Update tour rating
+      const tour = getTour(currentBooking.value.tourId)
+      if (tour) {
+        const tourReviews = dataStore.reviews.filter(r => r.tourId === tour.id)
+        const avgRating = tourReviews.reduce((sum, r) => sum + r.rating, 0) / tourReviews.length
+        dataStore.updateTour(tour.id, { rating: avgRating.toFixed(1) })
+      }
+      
+      // Update guide rating
+      const guideReviews = dataStore.reviews.filter(r => r.guideId === currentBooking.value.guideId)
+      const avgGuideRating = guideReviews.reduce((sum, r) => sum + r.rating, 0) / guideReviews.length
+      dataStore.updateUser(currentBooking.value.guideId, { rating: avgGuideRating.toFixed(1) })
+      
+      dataStore.saveAllData()
+      alert('Review updated successfully!')
+    }
+  } else {
+    // Create new review
+    const review = {
+      id: generateId('review'),
+      bookingId: currentBooking.value.id,
+      tourId: currentBooking.value.tourId,
+      guideId: currentBooking.value.guideId,
+      touristId: authStore.user.id,
+      rating: reviewForm.value.rating,
+      serviceRating: reviewForm.value.serviceRating,
+      professionalismRating: reviewForm.value.professionalismRating,
+      satisfactionRating: reviewForm.value.rating,
+      comment: reviewForm.value.comment,
+      createdAt: new Date().toISOString()
+    }
+    
+    dataStore.addReview(review)
+    
+    // Update tour rating
+    const tour = getTour(currentBooking.value.tourId)
+    if (tour) {
+      const tourReviews = dataStore.reviews.filter(r => r.tourId === tour.id)
+      const avgRating = tourReviews.reduce((sum, r) => sum + r.rating, 0) / tourReviews.length
+      dataStore.updateTour(tour.id, { rating: avgRating.toFixed(1), reviewCount: tourReviews.length })
+    }
+    
+    alert('Review submitted successfully!')
   }
-  
-  dataStore.addReview(review)
-  alert('Review submitted successfully!')
   closeReviewModal()
+}
+
+function deleteReview() {
+  if (confirm('Are you sure you want to delete this review?')) {
+    const reviewIndex = dataStore.reviews.findIndex(r => r.id === editingReview.value.id)
+    if (reviewIndex !== -1) {
+      dataStore.reviews.splice(reviewIndex, 1)
+      
+      // Update tour rating
+      const tour = getTour(currentBooking.value.tourId)
+      if (tour) {
+        const tourReviews = dataStore.reviews.filter(r => r.tourId === tour.id)
+        if (tourReviews.length > 0) {
+          const avgRating = tourReviews.reduce((sum, r) => sum + r.rating, 0) / tourReviews.length
+          dataStore.updateTour(tour.id, { rating: avgRating.toFixed(1), reviewCount: tourReviews.length })
+        } else {
+          dataStore.updateTour(tour.id, { rating: 0, reviewCount: 0 })
+        }
+      }
+      
+      // Update guide rating
+      const guideReviews = dataStore.reviews.filter(r => r.guideId === currentBooking.value.guideId)
+      if (guideReviews.length > 0) {
+        const avgGuideRating = guideReviews.reduce((sum, r) => sum + r.rating, 0) / guideReviews.length
+        dataStore.updateUser(currentBooking.value.guideId, { rating: avgGuideRating.toFixed(1) })
+      }
+      
+      dataStore.saveAllData()
+      alert('Review deleted successfully!')
+      closeReviewModal()
+    }
+  }
 }
 </script>
 

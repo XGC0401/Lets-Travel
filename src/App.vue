@@ -12,6 +12,10 @@
             <router-link to="/search">Search Tours</router-link>
             <router-link to="/my-bookings">My Bookings</router-link>
             <router-link to="/messages">Messages</router-link>
+            <router-link to="/emergency" class="emergency-link">
+              🚨 Emergency
+              <span v-if="unresolvedEmergencyCount > 0" class="notification-badge">{{ unresolvedEmergencyCount }}</span>
+            </router-link>
           </template>
           
           <!-- Tour Guide Navigation -->
@@ -20,21 +24,29 @@
             <router-link to="/create-tour">Create Tour</router-link>
             <router-link to="/bookings">Bookings</router-link>
             <router-link to="/guide-reports">Reports</router-link>
+            <router-link to="/guide-emergency" class="emergency-link">
+              🚨 Emergency
+              <span v-if="unresolvedEmergencyCount > 0" class="notification-badge">{{ unresolvedEmergencyCount }}</span>
+            </router-link>
           </template>
           
           <!-- Administrator Navigation -->
           <template v-if="authStore.userType === 'admin'">
-            <router-link to="/admin/users">Users</router-link>
             <router-link to="/admin/tours">Tours</router-link>
-            <router-link to="/admin/reviews">Reviews</router-link>
+            <router-link to="/admin/users">Users</router-link>
             <router-link to="/admin/disputes">Disputes</router-link>
+            <router-link to="/admin/reviews">Reviews</router-link>
             <router-link to="/admin/reports">Reports</router-link>
+            <router-link to="/admin/emergency" class="emergency-link">
+              🚨 Emergency
+              <span v-if="unresolvedEmergencyCount > 0" class="notification-badge">{{ unresolvedEmergencyCount }}</span>
+            </router-link>
           </template>
         </nav>
         
         <div class="user-section">
           <!-- Currency Switcher -->
-          <div class="currency-switcher" v-if="authStore.userType === 'tourist'">
+          <div class="currency-switcher">
             <select v-model="settingsStore.currency" @change="settingsStore.updateCurrency">
               <option value="USD">USD $</option>
               <option value="EUR">EUR €</option>
@@ -71,15 +83,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 import { useSettingsStore } from './stores/settings'
+import { useDataStore } from './stores/data'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
+const dataStore = useDataStore()
 const showUserMenu = ref(false)
+
+const unresolvedEmergencyCount = computed(() => {
+  return dataStore.emergencies.filter(e => e.status === 'active').length
+})
 
 const toggleUserMenu = () => {
   showUserMenu.value = !showUserMenu.value
@@ -131,6 +149,41 @@ const logout = () => {
 .main-nav a:hover,
 .main-nav a.router-link-active {
   background: rgba(255,255,255,0.2);
+}
+
+.main-nav a.emergency-link {
+  margin-left: 2rem;
+  border-left: 2px solid rgba(255,255,255,0.3);
+  padding-left: 2rem;
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .user-section {

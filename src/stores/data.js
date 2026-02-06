@@ -10,6 +10,7 @@ export const useDataStore = defineStore('data', () => {
   const disputes = ref([])
   const messages = ref([])
   const transactions = ref([])
+  const emergencies = ref([])
 
   // Load initial data
   function loadAllData() {
@@ -21,6 +22,7 @@ export const useDataStore = defineStore('data', () => {
     disputes.value = data.disputes || []
     messages.value = data.messages || []
     transactions.value = data.transactions || []
+    emergencies.value = data.emergencies || []
   }
 
   // Save all data
@@ -32,7 +34,8 @@ export const useDataStore = defineStore('data', () => {
       reviews: reviews.value,
       disputes: disputes.value,
       messages: messages.value,
-      transactions: transactions.value
+      transactions: transactions.value,
+      emergencies: emergencies.value
     })
   }
 
@@ -165,6 +168,20 @@ export const useDataStore = defineStore('data', () => {
     return transactions.value.filter(t => t.touristId === userId || t.guideId === userId)
   }
 
+  // Emergency operations
+  function addEmergency(emergency) {
+    emergencies.value.push(emergency)
+    saveAllData()
+  }
+
+  function updateEmergency(emergencyId, updates) {
+    const index = emergencies.value.findIndex(e => e.id === emergencyId)
+    if (index !== -1) {
+      emergencies.value[index] = { ...emergencies.value[index], ...updates }
+      saveAllData()
+    }
+  }
+
   // Initialize data on store creation
   loadAllData()
 
@@ -176,6 +193,7 @@ export const useDataStore = defineStore('data', () => {
     disputes,
     messages,
     transactions,
+    emergencies,
     loadAllData,
     saveAllData,
     addUser,
@@ -197,6 +215,8 @@ export const useDataStore = defineStore('data', () => {
     getConversation,
     addTransaction,
     updateTransaction,
-    getTransactionsByUser
+    getTransactionsByUser,
+    addEmergency,
+    updateEmergency
   }
 })

@@ -80,9 +80,12 @@
       </div>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, onMounted } from 'vue'
 import { generateAllTestData } from '../../data/generateTestData'
 import { useDataStore } from '../../stores/data'

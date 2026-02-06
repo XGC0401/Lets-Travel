@@ -33,14 +33,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="tour in filteredTours" :key="tour.id">
+          <tr v-for="tour in filteredTours" :key="tour.id" @click="showTourDetails(tour)" class="clickable-row">
             <td>
               <strong>{{ tour.title }}</strong><br>
               <small>{{ tour.type }}</small>
             </td>
             <td>{{ getGuide(tour.guideId)?.name }}</td>
             <td>{{ tour.city }}</td>
-            <td>${{ tour.price }}</td>
+            <td>{{ settingsStore.formatPrice(tour.price) }}</td>
             <td>
               <span :class="'badge badge-' + getStatusColor(tour.status)">
                 {{ tour.status }}
@@ -77,16 +77,63 @@
         </tbody>
       </table>
     </div>
+    
+    <!-- Tour Details Modal -->
+    <div v-if="selectedTour" class="modal-overlay" @click="selectedTour = null">
+      <div class="modal-content card" @click.stop>
+        <h2>{{ selectedTour.title }}</h2>
+        
+        <div class="tour-detail-grid">
+          <div><strong>Type:</strong> {{ selectedTour.type }}</div>
+          <div><strong>City:</strong> {{ selectedTour.city }}</div>
+          <div><strong>Price:</strong> {{ settingsStore.formatPrice(selectedTour.price) }}/person</div>
+          <div><strong>Duration:</strong> {{ selectedTour.duration }} hours</div>
+          <div><strong>Max People:</strong> {{ selectedTour.maxPeople }}</div>
+          <div><strong>Rating:</strong> ⭐ {{ selectedTour.rating }} ({{ selectedTour.reviewCount }} reviews)</div>
+        </div>
+        
+        <div class="tour-description">
+          <h3>Description</h3>
+          <p>{{ selectedTour.description }}</p>
+        </div>
+        
+        <div class="tour-included">
+          <h3>What's Included</h3>
+          <ul>
+            <li v-for="(item, index) in selectedTour.included" :key="index">{{ item }}</li>
+          </ul>
+        </div>
+        
+        <div class="tour-guide-info">
+          <h3>Guide Information</h3>
+          <div class="guide-card">
+            <img :src="getGuide(selectedTour.guideId)?.avatar" alt="Guide" class="guide-avatar-small">
+            <div>
+              <strong>{{ getGuide(selectedTour.guideId)?.name }}</strong>
+              <p>⭐ {{ getGuide(selectedTour.guideId)?.rating }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <button @click="selectedTour = null" class="btn btn-secondary mt-2">Close</button>
+      </div>
+    </div>
+    
+    <ScrollToTop />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useDataStore } from '../../stores/data'
+import { useSettingsStore } from '../../stores/settings'
+import ScrollToTop from '../../components/ScrollToTop.vue'
 
 const dataStore = useDataStore()
+const settingsStore = useSettingsStore()
 const filterStatus = ref('all')
 const searchQuery = ref('')
+const selectedTour = ref(null)
 
 const filteredTours = computed(() => {
   let tours = dataStore.tours
@@ -139,6 +186,10 @@ function takeOffline(tour) {
   if (confirm(`Take "${tour.title}" offline?`)) {
     dataStore.updateTour(tour.id, { status: 'offline' })
   }
+}
+
+function showTourDetails(tour) {
+  selectedTour.value = tour
 }
 </script>
 
@@ -216,5 +267,82 @@ function takeOffline(tour) {
 
 .btn-small:hover {
   opacity: 0.8;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.clickable-row:hover {
+  background: #f7fafc;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.tour-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 5px;
+}
+
+.tour-description,
+.tour-included,
+.tour-guide-info {
+  margin: 1.5rem 0;
+}
+
+.tour-description h3,
+.tour-included h3,
+.tour-guide-info h3 {
+  color: #667eea;
+  margin-bottom: 0.75rem;
+}
+
+.tour-included ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.tour-included li {
+  margin: 0.5rem 0;
+}
+
+.guide-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 5px;
+}
+
+.guide-avatar-small {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 </style>

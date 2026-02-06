@@ -6,7 +6,13 @@
       <div v-if="message" :class="message.type">{{ message.text }}</div>
       
       <div class="profile-header">
-        <img :src="profile.avatar" alt="Avatar" class="avatar-large">
+        <div class="avatar-container">
+          <img :src="profile.avatar" alt="Avatar" class="avatar-large">
+          <label for="avatar-upload" class="avatar-upload-label">
+            <input type="file" id="avatar-upload" @change="handleAvatarUpload" accept="image/*" hidden>
+            <span class="upload-icon">📷</span>
+          </label>
+        </div>
         <div>
           <h2>{{ profile.name }}</h2>
           <span class="badge badge-primary">{{ profile.type }}</span>
@@ -22,6 +28,7 @@
         <div class="form-group">
           <label>Email</label>
           <input type="email" v-model="profile.email" required>
+          <small class="verify-badge" v-if="profile.type === 'tourist' && profile.emailVerified">Email verify: ✓</small>
         </div>
         
         <template v-if="profile.type === 'guide'">
@@ -65,23 +72,12 @@
           <div class="form-group">
             <label>Phone</label>
             <input type="tel" v-model="profile.phone">
+            <small class="verify-badge" v-if="profile.phoneVerified">Phone verify: ✓</small>
           </div>
           
           <div class="form-group">
             <label>Languages (comma separated)</label>
             <input type="text" v-model="languagesStr">
-          </div>
-          
-          <div class="stats-row">
-            <div class="stat-item">
-              <strong>Total Bookings:</strong> {{ profile.totalBookings || 0 }}
-            </div>
-            <div class="stat-item">
-              <strong>Phone Verified:</strong> {{ profile.phoneVerified ? '✓' : '✗' }}
-            </div>
-            <div class="stat-item">
-              <strong>Email Verified:</strong> {{ profile.emailVerified ? '✓' : '✗' }}
-            </div>
           </div>
         </template>
         
@@ -91,12 +87,16 @@
         </div>
         
         <button type="submit" class="btn btn-primary">Save Profile</button>
+        <div v-if="saveSuccessMessage" class="save-success-message">✓ Saved Successfully</div>
       </form>
     </div>
   </div>
+  
+  <ScrollToTop />
 </template>
 
 <script setup>
+import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useDataStore } from '../../stores/data'
@@ -107,6 +107,7 @@ const dataStore = useDataStore()
 const profile = ref({ ...authStore.user })
 const newPassword = ref('')
 const message = ref(null)
+const saveSuccessMessage = ref(false)
 
 const languagesStr = computed({
   get: () => profile.value.languages ? profile.value.languages.join(', ') : '',
@@ -114,6 +115,24 @@ const languagesStr = computed({
     profile.value.languages = val.split(',').map(l => l.trim()).filter(Boolean)
   }
 })
+
+function handleAvatarUpload(event) {
+  const file = event.target.files[0]
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      profile.value.avatar = e.target.result
+      // Auto-save avatar
+      dataStore.updateUser(profile.value.id, { avatar: e.target.result })
+      authStore.updateProfile({ avatar: e.target.result })
+      message.value = { type: 'success', text: 'Profile picture updated!' }
+      setTimeout(() => {
+        message.value = null
+      }, 3000)
+    }
+    reader.readAsDataURL(file)
+  }
+}
 
 function saveProfile() {
   try {
@@ -125,12 +144,14 @@ function saveProfile() {
     dataStore.updateUser(profile.value.id, updates)
     authStore.updateProfile(updates)
     
+    saveSuccessMessage.value = true
     message.value = { type: 'success', text: 'Profile updated successfully!' }
     newPassword.value = ''
     
     setTimeout(() => {
       message.value = null
-    }, 3000)
+      saveSuccessMessage.value = false
+    }, 5000)
   } catch (error) {
     message.value = { type: 'error', text: 'Error updating profile' }
   }
@@ -152,6 +173,54 @@ function saveProfile() {
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
+}
+
+.avatar-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.avatar-upload-label {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: #667eea;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.avatar-upload-label:hover {
+  background: #764ba2;
+  transform: scale(1.1);
+}
+
+.upload-icon {
+  font-size: 1.2rem;
+}
+
+.verify-badge {
+  display: block;
+  color: #48bb78;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.save-success-message {
+  color: #48bb78;
+  font-weight: 600;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f0fff4;
+  border-radius: 5px;
+  text-align: center;
 }
 
 .profile-header h2 {
