@@ -1,5 +1,8 @@
 // Test data generator for Let's Travel platform
-// Generates 120+ users, 120+ tours, and 1200+ transactions
+// Generates:
+// - Tour Guides: 100-120, Tourists: 100-120, Admins: 5-10
+// - Tours: 1000-1200, Bookings: 1000-1200, Transactions: 1000-1200
+// - Reviews: 800-1000, Disputes: 50-100, Messages: 500-750
 
 const firstNames = ['James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica', 'Thomas', 'Sarah', 'Christopher', 'Karen', 'Daniel', 'Nancy', 'Matthew', 'Lisa', 'Anthony', 'Betty', 'Mark', 'Margaret', 'Donald', 'Sandra', 'Steven', 'Ashley', 'Paul', 'Kimberly', 'Andrew', 'Emily', 'Joshua', 'Donna', 'Kenneth', 'Michelle', 'Kevin', 'Carol', 'Brian', 'Amanda', 'George', 'Dorothy', 'Timothy', 'Melissa', 'Ronald', 'Deborah', 'Edward', 'Stephanie', 'Jason', 'Rebecca', 'Jeffrey', 'Sharon', 'Ryan', 'Laura', 'Jacob', 'Cynthia', 'Gary', 'Kathleen', 'Nicholas', 'Amy', 'Eric', 'Angela', 'Jonathan', 'Shirley', 'Stephen', 'Anna']
 
@@ -50,22 +53,27 @@ function generateId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-function generateUsers(count) {
+function generateUsers(touristsCount, guidesCount, adminsCount) {
   const users = []
   
-  // Generate 1 administrator
-  users.push({
-    id: generateId('user'),
-    email: 'admin@letstravel.com',
-    password: 'admin123',
-    type: 'admin',
-    name: 'System Admin',
-    createdAt: new Date('2025-01-01').toISOString(),
-    status: 'active'
-  })
+  // Generate administrators
+  for (let i = 0; i < adminsCount; i++) {
+    const firstName = randomElement(firstNames)
+    const lastName = randomElement(lastNames)
+    
+    users.push({
+      id: generateId('user'),
+      email: i === 0 ? 'admin@letstravel.com' : `${firstName.toLowerCase()}.${lastName.toLowerCase()}.admin${i}@letstravel.com`,
+      password: 'admin123',
+      type: 'admin',
+      name: i === 0 ? 'System Admin' : `${firstName} ${lastName}`,
+      createdAt: randomDate(new Date('2024-01-01'), new Date('2025-06-01')).toISOString(),
+      status: 'active',
+      avatar: `https://i.pravatar.cc/150?u=admin${i}`
+    })
+  }
   
-  // Generate tour guides (40% of remaining users)
-  const guidesCount = Math.floor((count - 1) * 0.4)
+  // Generate tour guides
   for (let i = 0; i < guidesCount; i++) {
     const firstName = randomElement(firstNames)
     const lastName = randomElement(lastNames)
@@ -95,8 +103,7 @@ function generateUsers(count) {
     })
   }
   
-  // Generate tourists (remaining users)
-  const touristsCount = count - users.length
+  // Generate tourists
   for (let i = 0; i < touristsCount; i++) {
     const firstName = randomElement(firstNames)
     const lastName = randomElement(lastNames)
@@ -211,12 +218,12 @@ function generateBookings(tourists, tours, count) {
   return bookings
 }
 
-function generateReviews(bookings, users) {
+function generateReviews(bookings, users, targetCount) {
   const reviews = []
   const completedBookings = bookings.filter(b => b.status === 'completed')
   
-  // 80% of completed bookings get reviews
-  const reviewCount = Math.floor(completedBookings.length * 0.8)
+  // Generate specified number of reviews (or all completed bookings if fewer)
+  const reviewCount = Math.min(targetCount, completedBookings.length)
   
   for (let i = 0; i < reviewCount; i++) {
     const booking = completedBookings[i]
@@ -273,6 +280,24 @@ function generateTransactions(bookings) {
         completedAt: booking.confirmedAt || booking.createdAt
       })
       
+      // Add additional transactions for some bookings (tips, service fees, etc.)
+      if (Math.random() > 0.7 && booking.status === 'completed') {
+        // Tip transaction (20% of bookings)
+        const tipAmount = (booking.totalPrice * randomInt(5, 15)) / 100
+        transactions.push({
+          id: generateId('transaction'),
+          bookingId: booking.id,
+          touristId: booking.touristId,
+          guideId: booking.guideId,
+          amount: tipAmount,
+          type: 'payment',
+          status: 'completed',
+          paymentMethod: randomElement(['credit_card', 'paypal', 'debit_card']),
+          createdAt: new Date(new Date(booking.completedAt).getTime() + randomInt(0, 3600000)).toISOString(),
+          completedAt: new Date(new Date(booking.completedAt).getTime() + randomInt(3600000, 7200000)).toISOString()
+        })
+      }
+      
       // Refund if cancelled
       if (booking.status === 'cancelled' && booking.paymentStatus === 'refunded') {
         const refundAmount = booking.totalPrice * (Math.random() > 0.5 ? 0.8 : 0.5)
@@ -294,7 +319,7 @@ function generateTransactions(bookings) {
   return transactions
 }
 
-function generateDisputes(bookings, users) {
+function generateDisputes(bookings, users, targetCount) {
   const disputes = []
   const disputeReasons = [
     'Guide did not show up',
@@ -306,9 +331,9 @@ function generateDisputes(bookings, users) {
     'Schedule conflict'
   ]
   
-  // 5% of completed bookings have disputes
+  // Generate specified number of disputes
   const completedBookings = bookings.filter(b => b.status === 'completed')
-  const disputeCount = Math.floor(completedBookings.length * 0.05)
+  const disputeCount = Math.min(targetCount, completedBookings.length)
   
   for (let i = 0; i < disputeCount; i++) {
     const booking = completedBookings[i]
@@ -334,17 +359,22 @@ function generateDisputes(bookings, users) {
   return disputes
 }
 
-function generateMessages(bookings, users) {
+function generateMessages(bookings, users, targetCount) {
   const messages = []
   
-  // Generate messages for 60% of bookings
-  const bookingsWithChat = bookings.slice(0, Math.floor(bookings.length * 0.6))
+  // Calculate how many bookings need messages and messages per booking
+  const avgMessagesPerBooking = 4
+  const bookingsWithChatCount = Math.ceil(targetCount / avgMessagesPerBooking)
+  const bookingsWithChat = bookings.slice(0, Math.min(bookingsWithChatCount, bookings.length))
   
+  let messageCount = 0
   bookingsWithChat.forEach(booking => {
-    const messageCount = randomInt(2, 8)
+    if (messageCount >= targetCount) return
+    const messagesForBooking = Math.min(randomInt(2, 8), targetCount - messageCount)
+    messageCount += messagesForBooking
     const startTime = new Date(booking.createdAt).getTime()
     
-    for (let i = 0; i < messageCount; i++) {
+    for (let i = 0; i < messagesForBooking; i++) {
       const isFromTourist = i % 2 === 0
       const messageTexts = [
         'Hi! Looking forward to the tour.',
@@ -376,25 +406,43 @@ function generateMessages(bookings, users) {
 export function generateAllTestData() {
   console.log('Generating test data...')
   
-  const users = generateUsers(150) // 150 users (1 admin, ~60 guides, ~89 tourists)
-  console.log(`Generated ${users.length} users`)
+  // Generate users within specified ranges
+  const touristCount = randomInt(100, 120)
+  const guideCount = randomInt(100, 120)
+  const adminCount = randomInt(5, 10)
+  const users = generateUsers(touristCount, guideCount, adminCount)
+  const actualAdmins = users.filter(u => u.type === 'admin').length
+  const actualGuides = users.filter(u => u.type === 'guide').length
+  const actualTourists = users.filter(u => u.type === 'tourist').length
+  console.log(`Generated ${users.length} users (${actualAdmins} admins, ${actualGuides} guides, ${actualTourists} tourists)`)
   
-  const tours = generateTours(users, 130) // 130 tours
+  // Generate tours within specified range (1000-1200)
+  const tourCount = randomInt(1000, 1200)
+  const tours = generateTours(users, tourCount)
   console.log(`Generated ${tours.length} tours`)
   
-  const bookings = generateBookings(users, tours, 1300) // 1300 bookings
+  // Generate bookings within specified range (1000-1200)
+  const bookingCount = randomInt(1000, 1200)
+  const bookings = generateBookings(users, tours, bookingCount)
   console.log(`Generated ${bookings.length} bookings`)
   
-  const reviews = generateReviews(bookings, users)
+  // Generate reviews within specified range (800-1000)
+  const reviewCount = randomInt(800, 1000)
+  const reviews = generateReviews(bookings, users, reviewCount)
   console.log(`Generated ${reviews.length} reviews`)
   
+  // Generate transactions (should match bookings approximately)
   const transactions = generateTransactions(bookings)
   console.log(`Generated ${transactions.length} transactions`)
   
-  const disputes = generateDisputes(bookings, users)
+  // Generate disputes within specified range (50-100)
+  const disputeCount = randomInt(50, 100)
+  const disputes = generateDisputes(bookings, users, disputeCount)
   console.log(`Generated ${disputes.length} disputes`)
   
-  const messages = generateMessages(bookings, users)
+  // Generate messages within specified range (500-750)
+  const messageCount = randomInt(500, 750)
+  const messages = generateMessages(bookings, users, messageCount)
   console.log(`Generated ${messages.length} messages`)
   
   const data = {

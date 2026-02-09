@@ -9,6 +9,8 @@ import Register from '../views/auth/Register.vue'
 import SearchTours from '../views/tourist/SearchTours.vue'
 import TourDetails from '../views/tourist/TourDetails.vue'
 import MyBookings from '../views/tourist/MyBookings.vue'
+import MyDisputes from '../views/tourist/MyDisputes.vue'
+import MyTransactions from '../views/tourist/MyTransactions.vue'
 import Messages from '../views/tourist/Messages.vue'
 
 // Guide Views
@@ -16,11 +18,14 @@ import MyTours from '../views/guide/MyTours.vue'
 import CreateTour from '../views/guide/CreateTour.vue'
 import EditTour from '../views/guide/EditTour.vue'
 import GuideBookings from '../views/guide/GuideBookings.vue'
+import GuideDisputes from '../views/guide/GuideDisputes.vue'
+import GuideTransactions from '../views/guide/GuideTransactions.vue'
 import GuideReports from '../views/guide/GuideReports.vue'
 
 // Admin Views
 import AdminUsers from '../views/admin/AdminUsers.vue'
 import AdminTours from '../views/admin/AdminTours.vue'
+import AdminTransactions from '../views/admin/AdminTransactions.vue'
 import AdminReviews from '../views/admin/AdminReviews.vue'
 import AdminDisputes from '../views/admin/AdminDisputes.vue'
 import AdminReports from '../views/admin/AdminReports.vue'
@@ -41,7 +46,7 @@ const routes = [
       switch (authStore.userType) {
         case 'tourist': return '/search'
         case 'guide': return '/my-tours'
-        case 'admin': return '/admin/users'
+        case 'admin': return '/admin/tours'
         default: return '/login'
       }
     }
@@ -84,6 +89,18 @@ const routes = [
     meta: { requiresAuth: true, role: 'tourist' }
   },
   {
+    path: '/my-disputes',
+    name: 'MyDisputes',
+    component: MyDisputes,
+    meta: { requiresAuth: true, role: 'tourist' }
+  },
+  {
+    path: '/my-transactions',
+    name: 'MyTransactions',
+    component: MyTransactions,
+    meta: { requiresAuth: true, role: 'tourist' }
+  },
+  {
     path: '/messages',
     name: 'Messages',
     component: Messages,
@@ -122,6 +139,18 @@ const routes = [
     meta: { requiresAuth: true, role: 'guide' }
   },
   {
+    path: '/guide-disputes',
+    name: 'GuideDisputes',
+    component: GuideDisputes,
+    meta: { requiresAuth: true, role: 'guide' }
+  },
+  {
+    path: '/guide-transactions',
+    name: 'GuideTransactions',
+    component: GuideTransactions,
+    meta: { requiresAuth: true, role: 'guide' }
+  },
+  {
     path: '/guide-reports',
     name: 'GuideReports',
     component: GuideReports,
@@ -151,6 +180,12 @@ const routes = [
     path: '/admin/tours',
     name: 'AdminTours',
     component: AdminTours,
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/transactions',
+    name: 'AdminTransactions',
+    component: AdminTransactions,
     meta: { requiresAuth: true, role: 'admin' }
   },
   {

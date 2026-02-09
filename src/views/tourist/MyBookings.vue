@@ -133,14 +133,36 @@
         </div>
         
         <div class="form-group">
-          <label>Evidence (Optional)</label>
+          <label>Evidence (Optional - Maximum 5 files)</label>
           <input 
             type="file" 
             @change="handleDisputeEvidence"
             accept="image/*,.pdf"
             multiple
           >
-          <small>You can upload images or PDF files as evidence</small>
+          <small>You can upload up to 5 images or PDF files as evidence ({{ disputeForm.evidence.length }}/5 uploaded)</small>
+          
+          <!-- Evidence Preview -->
+          <div v-if="disputeForm.evidence.length > 0" class="evidence-preview-list">
+            <div 
+              v-for="(evidence, index) in disputeForm.evidence" 
+              :key="index" 
+              class="evidence-preview-item"
+            >
+              <div class="evidence-preview-thumbnail">
+                <img v-if="evidence.startsWith('data:image')" :src="evidence" alt="Evidence preview">
+                <span v-else class="pdf-icon">📄 PDF</span>
+              </div>
+              <button 
+                type="button"
+                @click="removeEvidence(index)" 
+                class="remove-evidence-btn"
+                title="Remove file"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
         </div>
         
         <div class="modal-actions">
@@ -292,13 +314,34 @@ function openDisputeModal(booking) {
 
 function handleDisputeEvidence(event) {
   const files = Array.from(event.target.files)
+  const maxFiles = 5
+  const remainingSlots = maxFiles - disputeForm.value.evidence.length
+  
+  if (files.length > remainingSlots) {
+    alert(`You can only upload ${maxFiles} files in total. You have ${remainingSlots} slot(s) remaining.`)
+    event.target.value = '' // Reset the input
+    return
+  }
+  
   files.forEach(file => {
+    if (disputeForm.value.evidence.length >= maxFiles) {
+      return
+    }
     const reader = new FileReader()
     reader.onload = (e) => {
-      disputeForm.value.evidence.push(e.target.result)
+      if (disputeForm.value.evidence.length < maxFiles) {
+        disputeForm.value.evidence.push(e.target.result)
+      }
     }
     reader.readAsDataURL(file)
   })
+  
+  // Reset the input so the same file can be selected again if needed
+  event.target.value = ''
+}
+
+function removeEvidence(index) {
+  disputeForm.value.evidence.splice(index, 1)
 }
 
 function submitDispute() {
@@ -638,5 +681,63 @@ function deleteReview() {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
+}
+
+.evidence-preview-list {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.evidence-preview-item {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.evidence-preview-thumbnail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7fafc;
+}
+
+.evidence-preview-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pdf-icon {
+  font-size: 2rem;
+}
+
+.remove-evidence-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.remove-evidence-btn:hover {
+  background: #dc2626;
 }
 </style>

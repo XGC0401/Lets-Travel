@@ -1,19 +1,25 @@
 <template>
-  <div class="admin-tours-view">
-    <h1>Tour Management</h1>
+  <div class="admin-transactions-view">
+    <h1>Transaction Management</h1>
     
     <div class="filters-row">
+      <select v-model="filterType">
+        <option value="all">All Types</option>
+        <option value="payment">Payments</option>
+        <option value="refund">Refunds</option>
+      </select>
+      
       <select v-model="filterStatus">
         <option value="all">All Statuses</option>
-        <option value="pending">Pending Review</option>
-        <option value="online">Online</option>
-        <option value="offline">Offline</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
       </select>
       
       <input 
         type="text" 
         v-model="searchQuery" 
-        placeholder="Search tours..."
+        placeholder="Search transactions..."
         class="search-input"
       >
     </div>
@@ -61,7 +67,7 @@
         <option :value="100">100</option>
       </select>
       <span class="per-page-label">per page</span>
-      <span class="total-in-pagination">| Total Tours: <strong>{{ filteredTours.length }}</strong></span>
+      <span class="total-in-pagination">| Total Transactions: <strong>{{ filteredTransactions.length }}</strong></span>
     </div>
     
     <div class="card">
@@ -69,55 +75,43 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Tour</th>
+            <th>Type</th>
+            <th>Tourist</th>
             <th>Guide</th>
-            <th>City</th>
-            <th>Price</th>
+            <th>Tour</th>
+            <th>Amount</th>
+            <th>Payment Method</th>
             <th>Status</th>
-            <th>Rating</th>
-            <th>Bookings</th>
+            <th>Date</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(tour, index) in paginatedTours" :key="tour.id" @click="showTourDetails(tour)" class="clickable-row">
+          <tr v-for="(transaction, index) in paginatedTransactions" :key="transaction.id" @click="showTransactionDetails(transaction)" class="clickable-row">
             <td><strong>{{ (currentPage - 1) * itemsPerPage + index + 1 }}.</strong></td>
             <td>
-              <strong>{{ tour.title }}</strong><br>
-              <small>{{ tour.type }}</small>
-            </td>
-            <td>{{ getGuide(tour.guideId)?.name }}</td>
-            <td>{{ tour.city }}</td>
-            <td>{{ settingsStore.formatPrice(tour.price) }}</td>
-            <td>
-              <span :class="'badge badge-' + getStatusColor(tour.status)">
-                {{ tour.status }}
+              <span :class="'badge badge-' + (transaction.type === 'payment' ? 'success' : 'warning')">
+                {{ transaction.type }}
               </span>
             </td>
-            <td>⭐ {{ tour.rating }} ({{ tour.reviewCount }})</td>
-            <td>{{ getBookingCount(tour.id) }}</td>
+            <td>{{ getTourist(transaction.touristId)?.name || 'Unknown' }}</td>
+            <td>{{ getGuide(transaction.guideId)?.name || 'Unknown' }}</td>
+            <td>{{ getTourTitle(transaction.bookingId) }}</td>
+            <td><strong>{{ settingsStore.formatPrice(transaction.amount) }}</strong></td>
+            <td>{{ formatPaymentMethod(transaction.paymentMethod) }}</td>
+            <td>
+              <span :class="'badge badge-' + getStatusColor(transaction.status)">
+                {{ transaction.status }}
+              </span>
+            </td>
+            <td>{{ formatDate(transaction.createdAt) }}</td>
             <td>
               <div class="action-buttons">
                 <button 
-                  v-if="tour.status === 'pending'"
-                  @click="approveTour(tour)"
-                  class="btn-small btn-success"
+                  @click.stop="viewDetails(transaction)"
+                  class="btn-small btn-info"
                 >
-                  Approve
-                </button>
-                <button 
-                  v-if="tour.status === 'pending'"
-                  @click="rejectTour(tour)"
-                  class="btn-small btn-danger"
-                >
-                  Reject
-                </button>
-                <button 
-                  v-if="tour.status === 'online'"
-                  @click="takeOffline(tour)"
-                  class="btn-small btn-warning"
-                >
-                  Take Offline
+                  View
                 </button>
               </div>
             </td>
@@ -169,47 +163,61 @@
         <option :value="100">100</option>
       </select>
       <span class="per-page-label">per page</span>
-      <span class="total-in-pagination">| Total Tours: <strong>{{ filteredTours.length }}</strong></span>
+      <span class="total-in-pagination">| Total Transactions: <strong>{{ filteredTransactions.length }}</strong></span>
     </div>
     
-    <!-- Tour Details Modal -->
-    <div v-if="selectedTour" class="modal-overlay" @click="selectedTour = null">
+    <!-- Transaction Details Modal -->
+    <div v-if="selectedTransaction" class="modal-overlay" @click="selectedTransaction = null">
       <div class="modal-content card" @click.stop>
-        <h2>{{ selectedTour.title }}</h2>
+        <h2>Transaction Details</h2>
         
-        <div class="tour-detail-grid">
-          <div><strong>Type:</strong> {{ selectedTour.type }}</div>
-          <div><strong>City:</strong> {{ selectedTour.city }}</div>
-          <div><strong>Price:</strong> {{ settingsStore.formatPrice(selectedTour.price) }}/person</div>
-          <div><strong>Duration:</strong> {{ selectedTour.duration }} hours</div>
-          <div><strong>Max People:</strong> {{ selectedTour.maxPeople }}</div>
-          <div><strong>Rating:</strong> ⭐ {{ selectedTour.rating }} ({{ selectedTour.reviewCount }} reviews)</div>
+        <div class="transaction-detail-grid">
+          <div><strong>Transaction ID:</strong> {{ selectedTransaction.id }}</div>
+          <div><strong>Type:</strong> 
+            <span :class="'badge badge-' + (selectedTransaction.type === 'payment' ? 'success' : 'warning')">
+              {{ selectedTransaction.type }}
+            </span>
+          </div>
+          <div><strong>Status:</strong> 
+            <span :class="'badge badge-' + getStatusColor(selectedTransaction.status)">
+              {{ selectedTransaction.status }}
+            </span>
+          </div>
+          <div><strong>Amount:</strong> {{ settingsStore.formatPrice(selectedTransaction.amount) }}</div>
+          <div><strong>Payment Method:</strong> {{ formatPaymentMethod(selectedTransaction.paymentMethod) }}</div>
+          <div><strong>Created:</strong> {{ formatDate(selectedTransaction.createdAt) }}</div>
+          <div><strong>Completed:</strong> {{ selectedTransaction.completedAt ? formatDate(selectedTransaction.completedAt) : 'N/A' }}</div>
         </div>
         
-        <div class="tour-description">
-          <h3>Description</h3>
-          <p>{{ selectedTour.description }}</p>
-        </div>
-        
-        <div class="tour-included">
-          <h3>What's Included</h3>
-          <ul>
-            <li v-for="(item, index) in selectedTour.included" :key="index">{{ item }}</li>
-          </ul>
-        </div>
-        
-        <div class="tour-guide-info">
-          <h3>Guide Information</h3>
-          <div class="guide-card">
-            <img :src="getGuide(selectedTour.guideId)?.avatar" alt="Guide" class="guide-avatar-small">
+        <div class="transaction-info">
+          <h3>Tourist Information</h3>
+          <div class="info-card">
+            <img :src="getTourist(selectedTransaction.touristId)?.avatar" alt="Tourist" class="user-avatar-small">
             <div>
-              <strong>{{ getGuide(selectedTour.guideId)?.name }}</strong>
-              <p>⭐ {{ getGuide(selectedTour.guideId)?.rating }}</p>
+              <strong>{{ getTourist(selectedTransaction.touristId)?.name }}</strong>
+              <p>{{ getTourist(selectedTransaction.touristId)?.email }}</p>
             </div>
           </div>
         </div>
         
-        <button @click="selectedTour = null" class="btn btn-secondary mt-2">Close</button>
+        <div class="transaction-info">
+          <h3>Guide Information</h3>
+          <div class="info-card">
+            <img :src="getGuide(selectedTransaction.guideId)?.avatar" alt="Guide" class="user-avatar-small">
+            <div>
+              <strong>{{ getGuide(selectedTransaction.guideId)?.name }}</strong>
+              <p>{{ getGuide(selectedTransaction.guideId)?.email }}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="transaction-info">
+          <h3>Booking Information</h3>
+          <p><strong>Tour:</strong> {{ getTourTitle(selectedTransaction.bookingId) }}</p>
+          <p><strong>Booking ID:</strong> {{ selectedTransaction.bookingId }}</p>
+        </div>
+        
+        <button @click="selectedTransaction = null" class="btn btn-secondary mt-2">Close</button>
       </div>
     </div>
     
@@ -225,41 +233,53 @@ import ScrollToTop from '../../components/ScrollToTop.vue'
 
 const dataStore = useDataStore()
 const settingsStore = useSettingsStore()
+const filterType = ref('all')
 const filterStatus = ref('all')
 const searchQuery = ref('')
-const selectedTour = ref(null)
+const selectedTransaction = ref(null)
 const currentPage = ref(1)
 const itemsPerPage = ref(25)
 
-const filteredTours = computed(() => {
-  let tours = dataStore.tours
+const filteredTransactions = computed(() => {
+  let transactions = dataStore.transactions
+  
+  if (filterType.value !== 'all') {
+    transactions = transactions.filter(t => t.type === filterType.value)
+  }
   
   if (filterStatus.value !== 'all') {
-    tours = tours.filter(t => t.status === filterStatus.value)
+    transactions = transactions.filter(t => t.status === filterStatus.value)
   }
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    tours = tours.filter(t => 
-      t.title.toLowerCase().includes(query) || 
-      t.city.toLowerCase().includes(query)
-    )
+    transactions = transactions.filter(t => {
+      const tourist = getTourist(t.touristId)
+      const guide = getGuide(t.guideId)
+      const tour = getTourTitle(t.bookingId)
+      return (
+        t.id.toLowerCase().includes(query) ||
+        tourist?.name.toLowerCase().includes(query) ||
+        guide?.name.toLowerCase().includes(query) ||
+        tour.toLowerCase().includes(query)
+      )
+    })
   }
   
   // Reset to page 1 when filters change
   currentPage.value = 1
   
-  return tours.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  return transactions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 })
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredTours.value.length / itemsPerPage.value)
+  return Math.ceil(filteredTransactions.value.length / itemsPerPage.value)
 })
 
-const paginatedTours = computed(() => {
+const paginatedTransactions = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
-  return filteredTours.value.slice(start, end)
+  return filteredTransactions.value.slice(start, end)
 })
 
 const visiblePages = computed(() => {
@@ -298,43 +318,58 @@ const visiblePages = computed(() => {
   return pages
 })
 
+function getTourist(touristId) {
+  return dataStore.getUserById(touristId)
+}
+
 function getGuide(guideId) {
   return dataStore.getUserById(guideId)
 }
 
-function getBookingCount(tourId) {
-  return dataStore.bookings.filter(b => b.tourId === tourId).length
+function getTourTitle(bookingId) {
+  const booking = dataStore.bookings.find(b => b.id === bookingId)
+  if (!booking) return 'Unknown Tour'
+  const tour = dataStore.tours.find(t => t.id === booking.tourId)
+  return tour?.title || 'Unknown Tour'
+}
+
+function formatPaymentMethod(method) {
+  if (!method) return 'N/A'
+  return method.replace('_', ' ').split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+function formatDate(date) {
+  return new Date(date).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 function getStatusColor(status) {
   const colors = {
-    online: 'success',
+    completed: 'success',
     pending: 'warning',
-    draft: 'info',
-    offline: 'danger'
+    failed: 'danger'
   }
   return colors[status] || 'info'
 }
 
-function approveTour(tour) {
-  dataStore.updateTour(tour.id, { status: 'online' })
-  alert(`Tour "${tour.title}" has been approved and is now online.`)
+function truncateTransactionId(id) {
+  if (id.length <= 20) return id
+  return id.substring(0, 20) + '...'
 }
 
-function rejectTour(tour) {
-  if (confirm(`Reject tour "${tour.title}"?`)) {
-    dataStore.updateTour(tour.id, { status: 'draft' })
-  }
+function showTransactionDetails(transaction) {
+  selectedTransaction.value = transaction
 }
 
-function takeOffline(tour) {
-  if (confirm(`Take "${tour.title}" offline?`)) {
-    dataStore.updateTour(tour.id, { status: 'offline' })
-  }
-}
-
-function showTourDetails(tour) {
-  selectedTour.value = tour
+function viewDetails(transaction) {
+  selectedTransaction.value = transaction
 }
 </script>
 
@@ -407,18 +442,8 @@ function showTourDetails(tour) {
   transition: all 0.3s;
 }
 
-.btn-small.btn-success {
-  background: #48bb78;
-  color: white;
-}
-
-.btn-small.btn-danger {
-  background: #f56565;
-  color: white;
-}
-
-.btn-small.btn-warning {
-  background: #ed8936;
+.btn-small.btn-info {
+  background: #4299e1;
   color: white;
 }
 
@@ -455,7 +480,7 @@ function showTourDetails(tour) {
   overflow-y: auto;
 }
 
-.tour-detail-grid {
+.transaction-detail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
@@ -465,29 +490,16 @@ function showTourDetails(tour) {
   border-radius: 5px;
 }
 
-.tour-description,
-.tour-included,
-.tour-guide-info {
+.transaction-info {
   margin: 1.5rem 0;
 }
 
-.tour-description h3,
-.tour-included h3,
-.tour-guide-info h3 {
+.transaction-info h3 {
   color: #667eea;
   margin-bottom: 0.75rem;
 }
 
-.tour-included ul {
-  margin: 0;
-  padding-left: 1.5rem;
-}
-
-.tour-included li {
-  margin: 0.5rem 0;
-}
-
-.guide-card {
+.info-card {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -496,7 +508,7 @@ function showTourDetails(tour) {
   border-radius: 5px;
 }
 
-.guide-avatar-small {
+.user-avatar-small {
   width: 60px;
   height: 60px;
   border-radius: 50%;

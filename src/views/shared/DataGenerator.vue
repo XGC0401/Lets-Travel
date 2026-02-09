@@ -50,13 +50,13 @@
       <div class="info-section">
         <h3>What will be generated?</h3>
         <ul>
-          <li>150 Users (1 Administrator, ~60 Tour Guides, ~89 Tourists)</li>
-          <li>130 Tours across various cities and categories</li>
-          <li>1,300 Bookings with different statuses</li>
-          <li>1,000+ Transactions (payments and refunds)</li>
-          <li>800+ Reviews and ratings</li>
-          <li>60+ Disputes</li>
-          <li>700+ Messages between users</li>
+          <li>205-250 Users (5-10 Administrators, 100-120 Tour Guides, 100-120 Tourists)</li>
+          <li>1,000-1,200 Tours across various cities and categories</li>
+          <li>1,000-1,200 Bookings with different statuses</li>
+          <li>1,100-1,400 Transactions (payments, refunds, and tips)</li>
+          <li>800-1,000 Reviews and ratings</li>
+          <li>50-100 Disputes</li>
+          <li>500-750 Messages between users</li>
         </ul>
         
         <h3 style="margin-top: 2rem;">Demo Credentials</h3>

@@ -38,5 +38,12 @@ function getDefaultData() {
 
 // Generate unique ID
 export function generateId(prefix = '') {
+  // Special format for transactions: T_xxxxxx_xxxxxx (shorter, cleaner)
+  if (prefix === 'transaction') {
+    const part1 = Math.random().toString(36).substr(2, 6).toUpperCase()
+    const part2 = Math.random().toString(36).substr(2, 6).toUpperCase()
+    return `T_${part1}_${part2}`
+  }
+  
   return `${prefix}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }

@@ -11,6 +11,8 @@
           <template v-if="authStore.userType === 'tourist'">
             <router-link to="/search">Search Tours</router-link>
             <router-link to="/my-bookings">My Bookings</router-link>
+            <router-link to="/my-disputes">My Disputes</router-link>
+            <router-link to="/my-transactions">My Transactions</router-link>
             <router-link to="/messages">Messages</router-link>
             <router-link to="/emergency" class="emergency-link">
               🚨 Emergency
@@ -23,6 +25,8 @@
             <router-link to="/my-tours">My Tours</router-link>
             <router-link to="/create-tour">Create Tour</router-link>
             <router-link to="/bookings">Bookings</router-link>
+            <router-link to="/guide-disputes">Disputes</router-link>
+            <router-link to="/guide-transactions">Transactions</router-link>
             <router-link to="/guide-reports">Reports</router-link>
             <router-link to="/guide-emergency" class="emergency-link">
               🚨 Emergency
@@ -34,6 +38,7 @@
           <template v-if="authStore.userType === 'admin'">
             <router-link to="/admin/tours">Tours</router-link>
             <router-link to="/admin/users">Users</router-link>
+            <router-link to="/admin/transactions">Transactions</router-link>
             <router-link to="/admin/disputes">Disputes</router-link>
             <router-link to="/admin/reviews">Reviews</router-link>
             <router-link to="/admin/reports">Reports</router-link>
@@ -114,7 +119,7 @@ const logout = () => {
 .app-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1rem 0;
+  padding: 1.5rem 0;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
@@ -123,27 +128,42 @@ const logout = () => {
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 3rem;
+}
+
+.logo {
+  margin-right: 1rem;
+  flex-shrink: 0;
 }
 
 .logo h1 {
   margin: 0;
   cursor: pointer;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  white-space: nowrap;
+  font-weight: 700;
 }
 
 .main-nav {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
+  flex: 1;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .main-nav a {
   color: white;
   text-decoration: none;
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 5px;
   transition: background 0.3s;
+  font-size: 1.15rem;
+  font-weight: 600;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
 }
 
 .main-nav a:hover,
