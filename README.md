@@ -68,8 +68,32 @@ npm run generate-data
 npm run build
 ```
 
+## Supabase Setup (API Data Source)
+
+This project now supports Supabase as the primary data source, with `localStorage` as fallback.
+
+1. Copy `.env.example` to `.env` and fill in your Supabase values:
+
+```bash
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+```
+
+2. In Supabase SQL Editor, run `supabase/schema.sql`.
+
+3. Run the app:
+
+```bash
+npm run dev
+```
+
+If Supabase env vars are missing, the app automatically falls back to local data.
+
+Note: the provided `supabase/schema.sql` uses permissive policies for MVP/testing. For production, replace them with user-scoped RLS rules.
+
 ## Technology Stack
 - Vue 3 with Composition API
 - Vue Router for navigation
 - Pinia for state management
 - Vite for build tooling
+- Supabase for API-backed persistence

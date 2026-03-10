@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "generate-data": "node src/data/generateTestData.js"
+    "generate-data": "node src/data/generateTestData.js",
+    "test-db": "node scripts/testDbConnection.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
     "vue": "^3.4.21",
     "vue-router": "^4.3.0",
     "pinia": "^2.1.7",

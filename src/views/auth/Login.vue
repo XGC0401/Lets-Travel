@@ -74,8 +74,12 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 
-function handleLogin() {
+async function handleLogin() {
   error.value = ''
+
+  if (dataStore.isLoading) {
+    await dataStore.loadAllData()
+  }
   
   // Find user in data store
   const user = dataStore.users.find(u => u.email === email.value)

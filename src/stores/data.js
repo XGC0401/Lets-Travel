@@ -11,23 +11,35 @@ export const useDataStore = defineStore('data', () => {
   const messages = ref([])
   const transactions = ref([])
   const emergencies = ref([])
+  const isLoading = ref(false)
+  const loadError = ref('')
 
   // Load initial data
-  function loadAllData() {
-    const data = loadData()
-    users.value = data.users || []
-    tours.value = data.tours || []
-    bookings.value = data.bookings || []
-    reviews.value = data.reviews || []
-    disputes.value = data.disputes || []
-    messages.value = data.messages || []
-    transactions.value = data.transactions || []
-    emergencies.value = data.emergencies || []
+  async function loadAllData() {
+    try {
+      isLoading.value = true
+      loadError.value = ''
+
+      const data = await loadData()
+      users.value = data.users || []
+      tours.value = data.tours || []
+      bookings.value = data.bookings || []
+      reviews.value = data.reviews || []
+      disputes.value = data.disputes || []
+      messages.value = data.messages || []
+      transactions.value = data.transactions || []
+      emergencies.value = data.emergencies || []
+    } catch (error) {
+      console.error('Error loading store data:', error)
+      loadError.value = 'Failed to load data'
+    } finally {
+      isLoading.value = false
+    }
   }
 
   // Save all data
-  function saveAllData() {
-    saveData({
+  async function saveAllData() {
+    await saveData({
       users: users.value,
       tours: tours.value,
       bookings: bookings.value,
@@ -194,6 +206,8 @@ export const useDataStore = defineStore('data', () => {
     messages,
     transactions,
     emergencies,
+    isLoading,
+    loadError,
     loadAllData,
     saveAllData,
     addUser,
