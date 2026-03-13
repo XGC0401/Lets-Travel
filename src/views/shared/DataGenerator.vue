@@ -88,6 +88,7 @@
 import ScrollToTop from '../../components/ScrollToTop.vue'
 import { ref, onMounted } from 'vue'
 import { generateAllTestData } from '../../data/generateTestData'
+import { saveDataAsync } from '../../data/dataService'
 import { useDataStore } from '../../stores/data'
 
 const dataStore = useDataStore()
@@ -99,13 +100,15 @@ onMounted(() => {
   updateStats()
 })
 
-function generateData() {
+async function generateData() {
   generating.value = true
   status.value = { type: 'success', message: 'Generating test data...' }
   
   try {
     const data = generateAllTestData()
-    dataStore.loadAllData()
+    status.value = { type: 'success', message: 'Saving data (this may take a moment)...' }
+    await saveDataAsync(data)
+    await dataStore.loadAllData()
     
     status.value = { 
       type: 'success', 
