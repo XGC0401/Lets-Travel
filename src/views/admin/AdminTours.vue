@@ -100,21 +100,21 @@
               <div class="action-buttons">
                 <button 
                   v-if="tour.status === 'pending'"
-                  @click="approveTour(tour)"
+                  @click.stop="approveTour(tour)"
                   class="btn-small btn-success"
                 >
                   Approve
                 </button>
                 <button 
                   v-if="tour.status === 'pending'"
-                  @click="rejectTour(tour)"
+                  @click.stop="rejectTour(tour)"
                   class="btn-small btn-danger"
                 >
                   Reject
                 </button>
                 <button 
                   v-if="tour.status === 'online'"
-                  @click="takeOffline(tour)"
+                  @click.stop="takeOffline(tour)"
                   class="btn-small btn-warning"
                 >
                   Take Offline
