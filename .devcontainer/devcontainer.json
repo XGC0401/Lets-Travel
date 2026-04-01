@@ -1,4 +1,11 @@
 {
   "name": "Lets-Travel",
-  "workspaceFolder": "/workspaces/Lets-Travel"
+  "workspaceFolder": "/workspaces/Lets-Travel",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "openBrowserOnce"
+    }
+  }
 }

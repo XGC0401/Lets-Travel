@@ -77,7 +77,7 @@
       </div>
     </header>
     
-    <main class="app-main">
+    <main :class="['app-main', { 'auth-main': !authStore.isAuthenticated }]">
       <router-view />
     </main>
     
@@ -129,7 +129,8 @@ const logout = () => {
   padding: 0 2rem;
   display: flex;
   align-items: center;
-  gap: 3rem;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
 }
 
 .logo {
@@ -148,18 +149,21 @@ const logout = () => {
 .main-nav {
   display: flex;
   gap: 1.5rem;
-  flex: 1;
+  flex: 1 1 640px;
+  min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .main-nav a {
   color: white;
   text-decoration: none;
-  padding: 0.75rem 1.25rem;
+  padding: 0.65rem 1rem;
   border-radius: 5px;
   transition: background 0.3s;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 600;
   white-space: nowrap;
   display: flex;
@@ -211,6 +215,8 @@ const logout = () => {
   align-items: center;
   gap: 1rem;
   position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .currency-switcher select {
@@ -262,6 +268,12 @@ const logout = () => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.app-main.auth-main {
+  min-height: 100vh;
+  max-width: none;
+  padding: 0;
 }
 
 .app-footer {
