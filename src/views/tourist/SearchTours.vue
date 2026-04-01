@@ -7,6 +7,15 @@
       <h3>Filters</h3>
       <div class="filters-grid">
         <div class="form-group">
+          <label>Tour Name</label>
+          <input
+            type="text"
+            v-model.trim="filters.title"
+            placeholder="Search by tour name"
+          >
+        </div>
+
+        <div class="form-group">
           <label>Destination</label>
           <select v-model="filters.city">
             <option value="">All Cities</option>
@@ -136,6 +145,7 @@ const dataStore = useDataStore()
 const settingsStore = useSettingsStore()
 
 const filters = ref({
+  title: '',
   city: '',
   type: '',
   minPrice: null,
@@ -160,6 +170,11 @@ const languages = ['English', 'Spanish', 'Mandarin', 'French', 'German', 'Japane
 
 const filteredTours = computed(() => {
   let tours = dataStore.tours.filter(t => t.status === 'online')
+
+  if (appliedFilters.value.title) {
+    const normalizedTitle = appliedFilters.value.title.toLowerCase()
+    tours = tours.filter(t => t.title.toLowerCase().includes(normalizedTitle))
+  }
   
   if (appliedFilters.value.city) {
     tours = tours.filter(t => t.city === appliedFilters.value.city)
@@ -215,6 +230,7 @@ function applyFilters() {
 
 function resetFilters() {
   filters.value = {
+    title: '',
     city: '',
     type: '',
     minPrice: null,

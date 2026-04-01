@@ -1,7 +1,7 @@
 <template>
-  <div><router-view /></div>
+  <CreateTour />
 </template>
 
 <script setup>
-// EditTour uses CreateTour component
+import CreateTour from './CreateTour.vue'
 </script>
