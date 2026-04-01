@@ -50,26 +50,25 @@
         </nav>
         
         <div class="user-section">
-          <!-- Currency Switcher -->
-          <div class="currency-switcher">
-            <select v-model="settingsStore.currency" @change="settingsStore.updateCurrency">
-              <option value="USD">USD $</option>
-              <option value="EUR">EUR €</option>
-              <option value="GBP">GBP £</option>
-              <option value="HKD">HKD $</option>
-              <option value="JPY">JPY ¥</option>
-              <option value="CNY">CNY ¥</option>
-              <option value="AUD">AUD $</option>
-              <option value="SGD">SGD $</option>
-            </select>
-          </div>
-          
           <div class="user-menu" @click="toggleUserMenu">
             <span class="user-name">{{ authStore.user?.name }}</span>
             <span class="user-type">({{ authStore.userType }})</span>
           </div>
           
           <div v-if="showUserMenu" class="dropdown-menu">
+            <div class="dropdown-section currency-switcher">
+              <label for="currency-select">Currency</label>
+              <select id="currency-select" v-model="settingsStore.currency" @change="settingsStore.updateCurrency">
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+                <option value="HKD">HKD $</option>
+                <option value="JPY">JPY ¥</option>
+                <option value="CNY">CNY ¥</option>
+                <option value="AUD">AUD $</option>
+                <option value="SGD">SGD $</option>
+              </select>
+            </div>
             <router-link to="/profile">Profile</router-link>
             <a @click="logout">Logout</a>
           </div>
@@ -126,44 +125,43 @@ const logout = () => {
 .header-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 2rem 0 1.6rem;
   display: flex;
   align-items: center;
-  gap: 1rem 2rem;
-  flex-wrap: wrap;
+  gap: 1rem 1.75rem;
 }
 
 .logo {
-  margin-right: 1rem;
+  margin-right: 0.25rem;
+  margin-left: -0.2rem;
   flex-shrink: 0;
 }
 
 .logo h1 {
   margin: 0;
   cursor: pointer;
-  font-size: 1.8rem;
+  font-size: 1.55rem;
   white-space: nowrap;
   font-weight: 700;
 }
 
 .main-nav {
   display: flex;
-  gap: 1.5rem;
-  flex: 1 1 640px;
+  gap: 0.85rem;
+  flex: 1 1 auto;
   min-width: 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  justify-content: flex-start;
 }
 
 .main-nav a {
   color: white;
   text-decoration: none;
-  padding: 0.65rem 1rem;
+  padding: 0.55rem 0.85rem;
   border-radius: 5px;
   transition: background 0.3s;
-  font-size: 1rem;
+  font-size: 0.96rem;
   font-weight: 600;
   white-space: nowrap;
   display: flex;
@@ -176,9 +174,9 @@ const logout = () => {
 }
 
 .main-nav a.emergency-link {
-  margin-left: 2rem;
+  margin-left: 0.75rem;
   border-left: 2px solid rgba(255,255,255,0.3);
-  padding-left: 2rem;
+  padding-left: 1.25rem;
   position: relative;
 }
 
@@ -213,23 +211,25 @@ const logout = () => {
 .user-section {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   position: relative;
   margin-left: auto;
   flex-shrink: 0;
+  padding-right: 0.35rem;
 }
 
 .currency-switcher select {
-  padding: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
   border-radius: 5px;
-  border: none;
+  border: 1px solid #cbd5e0;
   background: white;
   cursor: pointer;
 }
 
 .user-menu {
   cursor: pointer;
-  padding: 0.5rem 1rem;
+  padding: 0.55rem 1rem;
   background: rgba(255,255,255,0.2);
   border-radius: 5px;
 }
@@ -249,6 +249,20 @@ const logout = () => {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   overflow: hidden;
   z-index: 1000;
+  min-width: 220px;
+}
+
+.dropdown-section {
+  padding: 0.9rem 1rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dropdown-section label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: #4a5568;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .dropdown-menu a {
@@ -282,5 +296,21 @@ const logout = () => {
   text-align: center;
   padding: 2rem;
   margin-top: 4rem;
+}
+
+@media (max-width: 1180px) {
+  .header-content {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .main-nav {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .user-section {
+    order: 2;
+  }
 }
 </style>

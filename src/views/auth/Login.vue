@@ -129,18 +129,21 @@ function fillDemo(type) {
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
   min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
+  padding: 1rem 1.5rem;
+  overflow: hidden;
 }
 
 .login-card {
   width: 100%;
-  max-width: 450px;
+  max-width: 430px;
+  margin-bottom: 0;
+  padding: 1.5rem 1.75rem;
 }
 
 .login-card h1 {
@@ -149,8 +152,8 @@ function fillDemo(type) {
 }
 
 .demo-accounts {
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
   border-top: 2px solid #e2e8f0;
 }
 
@@ -163,12 +166,12 @@ function fillDemo(type) {
 .demo-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .demo-item {
-  padding: 1rem;
+  padding: 0.85rem 0.75rem;
   background: #f7fafc;
   border-radius: 5px;
   cursor: pointer;
